@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "hermes.fullname" . }}-validator
+spec:
+  serviceName: {{ include "hermes.fullname" . }}-validator
+  replicas: {{ .Values.node.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "hermes.name" . }}
+      app.kubernetes.io/component: validator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "hermes.name" . }}
+        app.kubernetes.io/component: validator
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      hostNetwork: {{ .Values.node.hostNetwork }}
+      dnsPolicy: {{ if .Values.node.hostNetwork }}ClusterFirstWithHostNet{{ else }}ClusterFirst{{ end }}
+      serviceAccountName: {{ include "hermes.serviceAccountName" . }}
+      nodeSelector:
+{{ toYaml .Values.node.nodeSelector | indent 8 }}
+{{- if eq .Values.cluster.compute.confidentialCompute "intel_tdx" }}
+{{ toYaml .Values.node.confidentialNodeSelector | indent 8 }}
+{{- end }}
+      containers:
+        - name: validator
+          image: "{{ .Values.images.node.repository }}:{{ .Values.images.node.tag }}"
+          imagePullPolicy: {{ .Values.images.node.pullPolicy }}
+          args:
+            - serve
+            - /etc/hermes/config/hermes.json
+            - --interval-seconds
+            - {{ .Values.node.intervalSeconds | quote }}
+          ports:
+            - name: subtensor
+              containerPort: 9944
+          env:
+            - name: HERMES_HOTKEY_FILE
+              value: {{ .Values.security.hotkeyFile | quote }}
+          volumeMounts:
+            - name: hermes-config
+              mountPath: /etc/hermes/config
+            - name: hermes-hotkey
+              mountPath: /var/run/secrets/hermes
+              readOnly: true
+          resources:
+{{ toYaml .Values.node.resources | indent 12 }}
+      volumes:
+        - name: hermes-config
+          configMap:
+            name: {{ include "hermes.fullname" . }}-config
+        - name: hermes-hotkey
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ include "hermes.fullname" . }}-vault

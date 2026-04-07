@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hermes
+description: Helm chart for the Hermes Bittensor validator and gateway stack
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

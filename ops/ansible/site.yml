@@ -1,0 +1,20 @@
+- name: Prepare Hermes bare-metal validator nodes
+  hosts: validators
+  become: true
+  roles:
+    - common
+    - nvidia
+    - kubernetes
+
+- name: Prepare Hermes gateway nodes
+  hosts: gateways
+  become: true
+  roles:
+    - common
+    - kubernetes
+
+- name: Deploy telemetry prerequisites
+  hosts: k8s_servers
+  become: true
+  roles:
+    - telemetry

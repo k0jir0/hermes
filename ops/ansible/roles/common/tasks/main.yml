@@ -1,0 +1,33 @@
+- name: Disable swap immediately
+  ansible.builtin.command: swapoff -a
+  changed_when: false
+
+- name: Remove swap entries from fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\sswap\s.*)$'
+    replace: '# \1'
+
+- name: Install low-latency host packages
+  ansible.builtin.package:
+    name:
+      - curl
+      - git
+      - jq
+      - nvme-cli
+      - ethtool
+      - irqbalance
+      - chrony
+    state: present
+
+- name: Set recommended sysctls for validator networking
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+  loop:
+    - { name: net.core.somaxconn, value: '8192' }
+    - { name: net.ipv4.tcp_tw_reuse, value: '1' }
+    - { name: net.ipv4.ip_local_port_range, value: '10240 65535' }
+    - { name: vm.max_map_count, value: '262144' }

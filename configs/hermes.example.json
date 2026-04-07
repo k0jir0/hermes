@@ -1,0 +1,61 @@
+{
+  "cluster": {
+    "compute": {
+      "gpu_class": "h100",
+      "gpu_count": 8,
+      "dedicated_bare_metal": true,
+      "confidential_compute": "intel_tdx"
+    },
+    "network": {
+      "bandwidth_gbps": 25,
+      "static_ips": true,
+      "strict_port_mapping": true,
+      "public_endpoint": "validator.hermes.local:9944"
+    },
+    "storage": {
+      "local_nvme": true,
+      "nvme_raid_level": "raid0",
+      "scratch_mount": "/var/lib/hermes"
+    },
+    "orchestration": {
+      "kubernetes_distribution": "rke2",
+      "telemetry_stack": [
+        "prometheus",
+        "grafana",
+        "dcgm-exporter"
+      ],
+      "node_selector": {
+        "node.kubernetes.io/instance-type": "baremetal-h100",
+        "hermes.ai/pool": "validators"
+      }
+    }
+  },
+  "gateway": {
+    "listen_addr": "0.0.0.0:3000",
+    "chutes_base_url": "https://api.chutes.ai/v1",
+    "allowed_subnets": [1, 8, 19],
+    "request_timeout_ms": 1200
+  },
+  "consensus": {
+    "kappa": 0.5,
+    "bonds_penalty": 0.9,
+    "ema_alpha": 0.1,
+    "validator_emission_ratio": 0.5
+  },
+  "storage": {
+    "vector_backend": "surrealdb",
+    "redis_url": "redis://redis.hermes.svc.cluster.local:6379",
+    "postgres_url": "postgres://hermes:hermes@postgres.hermes.svc.cluster.local:5432/hermes",
+    "vector_url": "http://surrealdb.hermes.svc.cluster.local:8000"
+  },
+  "security": {
+    "coldkey_policy": "offline-hardware-wallet",
+    "hotkey_source": {
+      "kind": "hashicorp_vault",
+      "path": "kv/data/hermes/hotkey",
+      "field": "mnemonic"
+    },
+    "disallow_inline_hotkeys": true,
+    "required_attestation": "intel_tdx"
+  }
+}

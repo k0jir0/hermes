@@ -1,0 +1,30 @@
+{
+  "validators": [
+    {
+      "id": "validator-alpha",
+      "stake": 180.0,
+      "weights": [0.45, 0.30, 0.15, 0.10]
+    },
+    {
+      "id": "validator-bravo",
+      "stake": 120.0,
+      "weights": [0.50, 0.20, 0.20, 0.10]
+    },
+    {
+      "id": "validator-charlie",
+      "stake": 80.0,
+      "weights": [0.20, 0.30, 0.40, 0.10]
+    }
+  ],
+  "miners": [
+    { "id": "miner-nyc" },
+    { "id": "miner-ams" },
+    { "id": "miner-tok" },
+    { "id": "miner-sfo" }
+  ],
+  "previous_bonds": [
+    [0.36, 0.28, 0.20, 0.16],
+    [0.33, 0.27, 0.22, 0.18],
+    [0.22, 0.24, 0.34, 0.20]
+  ]
+}

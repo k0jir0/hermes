@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hermes.fullname" . }}-gateway
+  labels:
+    app.kubernetes.io/name: {{ include "hermes.name" . }}
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: {{ .Values.gateway.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "hermes.name" . }}
+    app.kubernetes.io/component: gateway
+  ports:
+    - name: http
+      port: {{ .Values.gateway.service.port }}
+      targetPort: http

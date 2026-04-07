@@ -1,0 +1,19 @@
+- name: Install RKE2 server on primary control-plane host
+  ansible.builtin.shell: |
+    curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=server sh -
+  args:
+    creates: /usr/local/bin/rke2
+  when: inventory_hostname in groups['k8s_servers']
+
+- name: Install RKE2 agent on worker nodes
+  ansible.builtin.shell: |
+    curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=agent sh -
+  args:
+    creates: /usr/local/bin/rke2
+  when: inventory_hostname not in groups['k8s_servers']
+
+- name: Enable RKE2 service
+  ansible.builtin.service:
+    name: "{{ 'rke2-server' if inventory_hostname in groups['k8s_servers'] else 'rke2-agent' }}"
+    enabled: true
+    state: started

@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hermes.fullname" . }}-config
+data:
+  hermes.json: |
+    {
+      "cluster": {
+        "compute": {
+          "gpu_class": {{ .Values.cluster.compute.gpuClass | quote }},
+          "gpu_count": {{ .Values.cluster.compute.gpuCount }},
+          "dedicated_bare_metal": {{ .Values.cluster.compute.dedicatedBareMetal }},
+          "confidential_compute": {{ .Values.cluster.compute.confidentialCompute | quote }}
+        },
+        "network": {
+          "bandwidth_gbps": {{ .Values.cluster.network.bandwidthGbps }},
+          "static_ips": {{ .Values.cluster.network.staticIps }},
+          "strict_port_mapping": {{ .Values.cluster.network.strictPortMapping }},
+          "public_endpoint": {{ .Values.cluster.network.publicEndpoint | quote }}
+        },
+        "storage": {
+          "local_nvme": {{ .Values.cluster.storage.localNvme }},
+          "nvme_raid_level": {{ .Values.cluster.storage.nvmeRaidLevel | quote }},
+          "scratch_mount": {{ .Values.cluster.storage.scratchMount | quote }}
+        },
+        "orchestration": {
+          "kubernetes_distribution": {{ .Values.cluster.orchestration.kubernetesDistribution | quote }},
+          "telemetry_stack": {{ .Values.cluster.orchestration.telemetryStack | toJson }},
+          "node_selector": {{ .Values.cluster.orchestration.nodeSelector | toJson }}
+        }
+      },
+      "gateway": {
+        "listen_addr": "0.0.0.0:3000",
+        "chutes_base_url": "https://api.chutes.ai/v1",
+        "allowed_subnets": [1, 8, 19],
+        "request_timeout_ms": {{ .Values.gateway.env.timeoutMs }}
+      },
+      "consensus": {
+        "kappa": 0.5,
+        "bonds_penalty": 0.9,
+        "ema_alpha": 0.1,
+        "validator_emission_ratio": 0.5
+      },
+      "storage": {
+        "vector_backend": {{ .Values.storage.vectorBackend | quote }},
+        "redis_url": {{ .Values.storage.redisUrl | quote }},
+        "postgres_url": {{ .Values.storage.postgresUrl | quote }},
+        "vector_url": {{ .Values.storage.vectorUrl | quote }}
+      },
+      "security": {
+        "coldkey_policy": "offline-hardware-wallet",
+        "hotkey_source": {
+          "kind": "hashicorp_vault",
+          "path": {{ .Values.vault.secretPath | quote }},
+          "field": {{ .Values.vault.secretField | quote }}
+        },
+        "disallow_inline_hotkeys": true,
+        "required_attestation": {{ .Values.cluster.compute.confidentialCompute | quote }}
+      }
+    }

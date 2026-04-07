@@ -1,0 +1,13 @@
+- name: Install NVIDIA driver and toolkit dependencies
+  ansible.builtin.package:
+    name:
+      - nvidia-driver-550
+      - nvidia-container-toolkit
+      - linux-headers-generic
+    state: present
+
+- name: Restart containerd after NVIDIA toolkit install
+  ansible.builtin.service:
+    name: containerd
+    state: restarted
+    enabled: true

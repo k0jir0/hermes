@@ -1,0 +1,103 @@
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+images:
+  gateway:
+    repository: ghcr.io/k0jir0/hermes-gateway
+    tag: latest
+    pullPolicy: IfNotPresent
+  node:
+    repository: ghcr.io/k0jir0/hermes-node
+    tag: latest
+    pullPolicy: IfNotPresent
+
+cluster:
+  compute:
+    gpuClass: h100
+    gpuCount: 8
+    dedicatedBareMetal: true
+    confidentialCompute: intel_tdx
+  network:
+    bandwidthGbps: 25
+    staticIps: true
+    strictPortMapping: true
+    publicEndpoint: validator.hermes.local:9944
+  storage:
+    localNvme: true
+    nvmeRaidLevel: raid0
+    scratchMount: /var/lib/hermes
+  orchestration:
+    kubernetesDistribution: rke2
+    telemetryStack:
+      - prometheus
+      - grafana
+      - dcgm-exporter
+    nodeSelector:
+      node.kubernetes.io/instance-type: baremetal-h100
+      hermes.ai/pool: validators
+
+gateway:
+  replicas: 2
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 1Gi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    averageCpuUtilization: 70
+  env:
+    region: us-east-1
+    allowedSubnets: "1,8,19"
+    timeoutMs: "1200"
+
+node:
+  replicas: 3
+  hostNetwork: true
+  intervalSeconds: 60
+  resources:
+    requests:
+      cpu: "4"
+      memory: 8Gi
+      nvidia.com/gpu: "1"
+    limits:
+      cpu: "8"
+      memory: 16Gi
+      nvidia.com/gpu: "1"
+  nodeSelector:
+    node.kubernetes.io/instance-type: baremetal-h100
+    hermes.ai/pool: validators
+  confidentialNodeSelector:
+    hermes.ai/confidential: required
+
+storage:
+  redisUrl: redis://redis.hermes.svc.cluster.local:6379
+  postgresUrl: postgres://hermes:hermes@postgres.hermes.svc.cluster.local:5432/hermes
+  vectorBackend: surrealdb
+  vectorUrl: http://surrealdb.hermes.svc.cluster.local:8000
+
+security:
+  hotkeyFile: /var/run/secrets/hermes/hotkey
+
+vault:
+  enabled: true
+  address: https://vault.service.consul:8200
+  roleName: hermes-validator
+  secretPath: kv/data/hermes/hotkey
+  secretField: mnemonic
+
+serviceMonitor:
+  enabled: true
+  interval: 15s
+  scrapeTimeout: 10s

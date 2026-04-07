@@ -1,0 +1,38 @@
+groups:
+  - name: hermes-validator
+    rules:
+      - alert: HermesSubtensorDisconnect
+        expr: increase(hermes_subtensor_disconnects_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Hermes validator lost a Subtensor connection
+          description: Hermes observed one or more peer disconnects in the last five minutes.
+
+      - alert: HermesGatewayLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket{app_kubernetes_io_component="gateway"}[5m])) by (le)) > 0.15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Hermes gateway p95 latency exceeded 150ms
+          description: Routing latency has exceeded the target budget for more than five minutes.
+
+      - alert: HermesGpuThermalThrottle
+        expr: max(DCGM_FI_DEV_GPU_TEMP) by (pod) > 85
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: Hermes GPU temperature crossed 85C
+          description: One or more validator GPUs is operating above the thermal comfort range.
+
+      - alert: HermesVaultSecretMountFailure
+        expr: kube_pod_container_status_waiting_reason{reason="CreateContainerConfigError", pod=~".*validator.*"} > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Hermes validator could not mount secrets
+          description: Verify Vault, SecretProviderClass, and the CSI driver health.

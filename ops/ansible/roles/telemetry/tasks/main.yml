@@ -1,0 +1,24 @@
+- name: Add Prometheus community chart repository
+  ansible.builtin.shell: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+  changed_when: false
+
+- name: Add NVIDIA DCGM chart repository
+  ansible.builtin.shell: helm repo add gpu-helm-charts https://nvidia.github.io/dcgm-exporter/helm-charts
+  changed_when: false
+
+- name: Update Helm repositories
+  ansible.builtin.shell: helm repo update
+  changed_when: false
+
+- name: Install kube-prometheus-stack
+  ansible.builtin.shell: |
+    helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+      --namespace monitoring \
+      --create-namespace
+  changed_when: false
+
+- name: Install DCGM exporter
+  ansible.builtin.shell: |
+    helm upgrade --install dcgm-exporter gpu-helm-charts/dcgm-exporter \
+      --namespace monitoring
+  changed_when: false

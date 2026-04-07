@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hermes.fullname" . }}-gateway
+spec:
+  replicas: {{ .Values.gateway.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "hermes.name" . }}
+      app.kubernetes.io/component: gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "hermes.name" . }}
+        app.kubernetes.io/component: gateway
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ include "hermes.serviceAccountName" . }}
+      containers:
+        - name: gateway
+          image: "{{ .Values.images.gateway.repository }}:{{ .Values.images.gateway.tag }}"
+          imagePullPolicy: {{ .Values.images.gateway.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: {{ .Values.gateway.service.port | quote }}
+            - name: HERMES_REGION
+              value: {{ .Values.gateway.env.region | quote }}
+            - name: HERMES_ALLOWED_SUBNETS
+              value: {{ .Values.gateway.env.allowedSubnets | quote }}
+            - name: HERMES_REQUEST_TIMEOUT_MS
+              value: {{ .Values.gateway.env.timeoutMs | quote }}
+            - name: HERMES_REDIS_URL
+              value: {{ .Values.storage.redisUrl | quote }}
+            - name: HERMES_POSTGRES_URL
+              value: {{ .Values.storage.postgresUrl | quote }}
+            - name: HERMES_VECTOR_URL
+              value: {{ .Values.storage.vectorUrl | quote }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+{{ toYaml .Values.gateway.resources | indent 12 }}
