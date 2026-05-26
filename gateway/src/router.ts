@@ -1,5 +1,9 @@
 import { GatewayConfig, GatewayHealth, RoutePlan, RouteRequest } from "./types.js";
 
+function describeVectorBackend(config: GatewayConfig): string {
+  return config.vectorBackend === "cloudflare_vectorize" ? "Cloudflare Vectorize" : "SurrealDB";
+}
+
 function assertAllowedSubnet(request: RouteRequest, config: GatewayConfig): void {
   if (!config.allowedSubnets.includes(request.subnetId)) {
     throw new Error(`subnet ${request.subnetId} is not allowed by this gateway`);
@@ -18,7 +22,7 @@ export function buildRoutePlan(request: RouteRequest, config: GatewayConfig): Ro
   const timeoutMs = Math.max(50, Math.min(config.requestTimeoutMs, request.latencyBudgetMs || config.requestTimeoutMs));
 
   if (request.operation === "context") {
-    reasons.push("Context retrieval is routed to the vector backend.");
+    reasons.push(`Context retrieval is routed to the ${describeVectorBackend(config)} backend.`);
     return {
       target: {
         kind: "vector",
@@ -100,7 +104,7 @@ export function buildGatewayHealth(config: GatewayConfig): GatewayHealth {
     services: [
       { name: "redis", endpoint: config.redisUrl, mode: "required" },
       { name: "postgres", endpoint: config.postgresUrl, mode: "required" },
-      { name: "vector", endpoint: config.vectorUrl, mode: "required" },
+      { name: `vector:${config.vectorBackend}`, endpoint: config.vectorUrl, mode: "required" },
       { name: "chutes", endpoint: config.chutesBaseUrl, mode: "optional" },
     ],
     telemetry: ["prometheus", "grafana", "dcgm-exporter"],

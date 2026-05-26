@@ -1,0 +1,114 @@
+Hermes Paper 1
+Context Windows, Distributed Retrieval, and Bittensor Claims
+
+This paper records a set of technical truths that matter when evaluating Bittensor, Chat-style systems, and Hermes.
+
+1. Bittensor does not have one single context window.
+
+Bittensor is a decentralized network, not a single model. That means there is no one global numeric context window that can be attributed to "Bittensor" as a whole. Each miner, subnet, or hosted model may expose its own bounded native context length. Some may be small, some may be large, and some may rely heavily on retrieval rather than direct long-context attention.
+
+Because of that, statements like "Bittensor has a bigger context window than ChatGPT" are usually imprecise. The technically correct comparison must be model-by-model and must clearly separate native context length from retrieval-augmented effective memory.
+
+2. A native context window is not the same thing as external searchable memory.
+
+A context window is the amount of text a model can directly attend to in one inference pass. If a model has a 128k context window, that means the model can process roughly 128k tokens directly in prompt plus generation budget, subject to the product's real limits.
+
+External searchable memory is different. A distributed system may hold a much larger indexed corpus across many machines and may retrieve a subset of that material during inference. That larger store is addressable memory, not a direct-attention prompt.
+
+The distinction is simple:
+
+- native context window: what the model can attend to directly now
+- distributed retrievable corpus: what the system can search across
+- effective working set: what the system actually brings to bear for a given task after retrieval, reranking, summarization, and prompt assembly
+
+3. Additive distributed machines can create a very large retrievable corpus.
+
+If multiple machines each store unique indexed content, the total retrievable corpus can be approximated as the sum of their unique storage.
+
+Let C be total distributed corpus, N be number of machines or shards, and S_i be unique indexed tokens on machine i.
+
+C ~= sum(S_i)
+
+If sixteen machines each hold fifty million unique indexed tokens, the total distributed retrievable corpus is about eight hundred million tokens.
+
+16 x 50M = 800M
+
+That 800M figure is plausible as distributed searchable memory. It is not an 800M token prompt.
+
+4. Why 800M searchable tokens is not an 800M context window.
+
+An 800M token context window would mean one model forward pass directly attends over all 800M tokens. That is not what retrieval systems do.
+
+In a retrieval pipeline, the system usually works like this:
+
+1. Search the large corpus.
+2. Retrieve a smaller set of relevant chunks.
+3. Rerank, filter, or summarize them.
+4. Assemble a final prompt that fits into the model's bounded context window.
+
+The model only attends to the final selected material, not the entire stored corpus.
+
+This is why the following are not equal:
+
+- 800M searchable corpus
+- 800M direct-attention context window
+
+They describe different layers of the system.
+
+5. Effective working set is larger than native context, but still bounded.
+
+Distributed retrieval can give a system a larger effective working set than the model's native prompt length because the system may inspect or retrieve multiple batches of evidence over several rounds.
+
+For example, if a system retrieves forty chunks of five hundred and twelve tokens each in one round, then one round examines about 20,480 retrieved tokens.
+
+40 x 512 = 20,480
+
+If the system performs five rounds of iterative retrieval and refinement, it may inspect around 102,400 retrieved tokens across the task.
+
+5 x 20,480 = 102,400
+
+That can be a larger effective working set than a naive single-shot prompt, but it is still not the same thing as direct simultaneous attention over all retrieved material. The model's native prompt window still constrains what can be directly reasoned over at one moment.
+
+6. Does an 800M corpus outperform a 128k context window?
+
+Not automatically.
+
+An 800M corpus is stronger on searchable breadth. A 128k native window is stronger on direct joint reasoning over everything already in prompt.
+
+An 800M distributed corpus can outperform a 128k context window when:
+
+- the total knowledge base is much larger than 128k
+- only a small fraction of that knowledge is relevant to each query
+- retrieval quality is high
+- reranking and prompt assembly are good enough to consistently surface the right evidence
+
+A 128k native context window can outperform the 800M retrieval system when:
+
+- all relevant evidence already fits inside 128k
+- exact cross-document reasoning matters
+- wording, order, and long-range dependencies are important
+- retrieval would be lossy, noisy, or inconsistent
+
+The larger corpus only helps if the retrieval stack is good enough. If the right evidence is not surfaced, the extra corpus size does not improve the answer.
+
+7. Bittensor does not provide an unbridled context window.
+
+Bittensor may host models with different context lengths, and some Bittensor-based systems may use retrieval to achieve a much larger effective working set. That still does not produce a literally unbounded context window.
+
+There is no single Bittensor-wide infinite or unbridled prompt length. There are only bounded model windows plus optional retrieval, caching, summarization, and orchestration layers.
+
+8. Implication for Hermes.
+
+Hermes should treat the context problem as a systems problem, not as a marketing claim. In practical terms, that means:
+
+- route context queries to a vector backend
+- retrieve only the most relevant evidence
+- rerank and compress aggressively
+- keep direct prompt budgets bounded and explicit
+- distinguish native context from effective working set in documentation and product claims
+
+Hermes can therefore be designed to work over a large distributed corpus without pretending that the model itself has infinite direct attention.
+
+Conclusion
+
+The core truth is this: distributed retrieval can give a system access to a much larger searchable universe of information than any single model window can hold, but that does not mean the system has an unbounded context window. The correct engineering language is addressable corpus, effective working set, retrieval quality, and bounded prompt composition. Any claim stronger than that should be treated skeptically.

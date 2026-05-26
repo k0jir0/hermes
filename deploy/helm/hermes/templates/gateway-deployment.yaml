@@ -1,3 +1,6 @@
+{{- if and (eq .Values.storage.vectorBackend "cloudflare_vectorize") (not .Values.storage.auth.existingSecret) }}
+{{- fail "storage.auth.existingSecret is required when storage.vectorBackend=cloudflare_vectorize" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,8 +39,23 @@ spec:
               value: {{ .Values.storage.redisUrl | quote }}
             - name: HERMES_POSTGRES_URL
               value: {{ .Values.storage.postgresUrl | quote }}
+            - name: HERMES_VECTOR_BACKEND
+              value: {{ .Values.storage.vectorBackend | quote }}
+            - name: HERMES_VECTOR_NAMESPACE
+              value: {{ .Values.storage.vectorNamespace | quote }}
+            - name: HERMES_VECTOR_DATABASE
+              value: {{ .Values.storage.vectorDatabase | quote }}
+            - name: HERMES_VECTOR_TABLE
+              value: {{ .Values.storage.vectorTable | quote }}
             - name: HERMES_VECTOR_URL
               value: {{ .Values.storage.vectorUrl | quote }}
+            {{- if .Values.storage.auth.existingSecret }}
+            - name: HERMES_VECTOR_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.auth.existingSecret | quote }}
+                  key: {{ .Values.storage.auth.tokenKey | quote }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /readyz

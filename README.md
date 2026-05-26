@@ -5,7 +5,7 @@ Hermes is a Rust-first Bittensor miner and validator operations stack built from
 ## What Is Implemented
 
 - A Rust workspace with a configurable YC3-style consensus engine and deployment planner.
-- A Bun gateway for low-latency request routing, Chutes dispatch preparation, and readiness endpoints.
+- A Bun gateway for low-latency request routing, live context retrieval against SurrealDB or Cloudflare Vectorize, reranking, bounded prompt assembly, Chutes dispatch preparation, and readiness endpoints.
 - Helm templates for gateway and validator workloads, plus Vault-based hotkey injection.
 - Ansible roles for bare-metal preparation, NVIDIA setup, Kubernetes bootstrap, and telemetry rollout.
 - Prometheus alert rules and a Grafana dashboard for GPU and Subtensor health tracking.
@@ -59,4 +59,4 @@ bun run dev
 - Dedicated bare-metal GPU nodes are treated as a hard requirement.
 - `configs/hermes.example.json` uses HashiCorp Vault hotkey delivery by default.
 - Confidential compute is enforced through TDX or SEV-oriented scheduling hints and runbook guidance.
-- The Helm chart expects Redis, PostgreSQL, and SurrealDB to be reachable as external services.
+- The gateway context path assumes Redis, PostgreSQL, and either SurrealDB or Cloudflare Vectorize are reachable as external services.

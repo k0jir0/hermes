@@ -12,6 +12,7 @@ const config: GatewayConfig = {
   confidentialBaseUrl: "http://validator-confidential.internal",
   chutesBaseUrl: "https://api.chutes.ai/v1",
   vectorUrl: "http://surrealdb.internal",
+  vectorBackend: "surrealdb",
   redisUrl: "redis://redis.internal:6379",
   postgresUrl: "postgres://hermes:hermes@postgres.internal:5432/hermes",
   requestTimeoutMs: 1200,
@@ -50,6 +51,7 @@ test("routes context retrieval to the vector backend", () => {
   assert.equal(plan.target.kind, "vector");
   assert.equal(plan.requiresWarmGpu, false);
   assert.equal(plan.target.baseUrl, "http://surrealdb.internal");
+  assert.match(plan.reasons[0], /SurrealDB/);
 });
 
 test("builds health payload for required services", () => {
@@ -57,5 +59,6 @@ test("builds health payload for required services", () => {
 
   assert.equal(health.ok, true);
   assert.equal(health.services.length, 4);
+  assert.equal(health.services[2]?.name, "vector:surrealdb");
   assert.ok(health.telemetry.includes("grafana"));
 });

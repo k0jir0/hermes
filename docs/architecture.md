@@ -16,7 +16,7 @@ The Bun gateway is the lightweight ingress layer that keeps hot-path routing out
 
 - Low-latency or weight-sensitive traffic stays on the bare-metal validator pool.
 - Confidential workloads are pinned to TDX or SEV-backed nodes.
-- Context retrieval is routed directly to the vector backend.
+- Context queries execute a bounded retrieval harness: route to the configured vector backend, fetch candidates, rerank them, and assemble a prompt-safe evidence packet from the larger distributed corpus.
 - Overflow or burst inference can be handed to Chutes while preserving subnet and region headers.
 
 ## Data Plane

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::config::{ConfigError, ConfidentialCompute, GpuClass, HermesConfig};
+use crate::repository::{build_repository_topology, RepositoryError, RepositoryTopology};
 use crate::security::{audit_security, SecurityError, SecurityPosture};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -13,6 +14,7 @@ pub struct HermesDeploymentPlan {
     pub node_selector: BTreeMap<String, String>,
     pub telemetry_targets: Vec<String>,
     pub required_services: Vec<String>,
+    pub storage: RepositoryTopology,
     pub security: SecurityPosture,
     pub notes: Vec<String>,
 }
@@ -21,6 +23,8 @@ pub struct HermesDeploymentPlan {
 pub enum RuntimeError {
     #[error(transparent)]
     Config(#[from] ConfigError),
+    #[error(transparent)]
+    Repository(#[from] RepositoryError),
     #[error(transparent)]
     Security(#[from] SecurityError),
 }
@@ -31,6 +35,7 @@ impl DeploymentPlanner {
     pub fn build(config: &HermesConfig) -> Result<HermesDeploymentPlan, RuntimeError> {
         config.validate()?;
         let security = audit_security(&config.security)?;
+        let storage = build_repository_topology(&config.storage)?;
 
         let gateway_replicas = match config.cluster.compute.gpu_class {
             GpuClass::B200 | GpuClass::H200 => 3,
@@ -71,18 +76,25 @@ impl DeploymentPlanner {
             notes.push("Current network profile is suitable for cross-region validator peering.".to_string());
         }
 
+        notes.extend(storage.notes.clone());
+
+        let mut required_services = vec![
+            storage.cache.backend.clone(),
+            storage.history.backend.clone(),
+            storage.vector.backend.clone(),
+            "prometheus".to_string(),
+            "grafana".to_string(),
+        ];
+        required_services.sort();
+        required_services.dedup();
+
         Ok(HermesDeploymentPlan {
             gateway_replicas,
             validator_replicas,
             node_selector,
             telemetry_targets: config.cluster.orchestration.telemetry_stack.clone(),
-            required_services: vec![
-                "redis".to_string(),
-                "postgres".to_string(),
-                "surrealdb".to_string(),
-                "prometheus".to_string(),
-                "grafana".to_string(),
-            ],
+            required_services,
+            storage,
             security,
             notes,
         })
