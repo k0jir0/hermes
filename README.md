@@ -43,11 +43,14 @@ Rust:
 
 ```bash
 cargo test --workspace
+cargo run -p hermes-node -- control
 cargo run -p hermes-node -- validate-config configs/hermes.example.json
 cargo run -p hermes-node -- plan configs/hermes.example.json
 cargo run -p hermes-node -- score-snapshot fixtures/epoch-snapshot.json --config configs/hermes.example.json --pretty
 cargo run -p hermes-node -- serve configs/hermes.example.json --interval-seconds 60 --once
 ```
+
+The numbered operator control plane is now available via `cargo run -p hermes-node -- control`.
 
 Windows note:
 

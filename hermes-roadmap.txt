@@ -1,0 +1,246 @@
+Hermes Roadmap:
+From Validated Operations Scaffold to Production-Proven Bittensor Control Plane
+
+Abstract
+
+Hermes currently works as a coherent engineering scaffold. The Rust workspace builds, the consensus and deployment planning tests pass, the gateway typechecks, the gateway tests pass, and the documented configuration, planning, scoring, and one-shot serve commands execute locally. That is meaningful progress. However, Hermes should not yet be treated as a production miner or validator operations system. Its current proof is mostly local, fixture-based, and configuration-oriented. The next roadmap should therefore move Hermes from "credible scaffold" to "operationally proven control plane" through formatting hygiene, reproducible local tooling, CI completeness, live gateway execution, Kubernetes rendering, integration testing, and eventually real Bittensor/Subtensor validation.
+
+1. Current Truth
+
+Hermes already demonstrates:
+
+- a Rust-first workspace with a YC3-style consensus engine
+- a validator deployment planner
+- config validation for secure bare-metal assumptions
+- gateway routing and context retrieval tests
+- documented commands for Rust and gateway validation
+- CI for Rust tests and gateway tests
+- deployment assets for Helm, Docker, Ansible, Prometheus, and Grafana
+
+Local validation passed for:
+
+- cargo test --workspace
+- cargo clippy --workspace --all-targets -- -D warnings
+- cargo run -p hermes-node -- validate-config configs/hermes.example.json
+- cargo run -p hermes-node -- plan configs/hermes.example.json
+- cargo run -p hermes-node -- score-snapshot fixtures/epoch-snapshot.json --config configs/hermes.example.json --pretty
+- cargo run -p hermes-node -- serve configs/hermes.example.json --interval-seconds 1 --once
+- gateway npm run typecheck
+- gateway npm test
+
+But local validation also showed:
+
+- cargo fmt --check fails
+- bun is not installed locally, so the live gateway process could not be started
+- helm is not installed locally, so Helm rendering could not be verified here
+- GitHub main does not include the local uncommitted operator control CLI
+- there is no proof yet of real Subtensor, Bittensor wallet, validator hotkey, Kubernetes, or live vector-service operation
+
+2. Product North Star
+
+Hermes should be a production-grade Bittensor operations control plane that makes validator and miner infrastructure deployable, observable, secure, and testable across local, staging, and production environments.
+
+It should not claim to be a finished live miner or validator until it proves:
+
+- live gateway startup
+- live dependency health checks
+- real deployment manifest rendering
+- integration against external services
+- secure hotkey handling paths
+- controlled validator lifecycle operations
+- measurable subnet-operation outcomes
+
+The near-term goal is not more breadth. The near-term goal is operational proof.
+
+3. Phase I: Repository Hygiene and Reproducibility
+
+Objective:
+Make the repository clean, deterministic, and easy to validate from a fresh checkout.
+
+Work:
+
+- run cargo fmt and commit the resulting formatting changes
+- decide whether the local operator control CLI belongs in GitHub main
+- if the control CLI belongs, add tests or at least command-level smoke coverage
+- if the control CLI does not belong yet, move it behind a feature flag or keep it out of main
+- remove encoding artifacts from README tree diagrams if present
+- document required local tools: Rust, Node, Bun, Helm, and optionally kubectl
+- add a single validation script that runs Rust tests, gateway typecheck, gateway tests, and Helm render when tools are available
+
+Success criterion:
+A clean checkout can be validated with one documented command, and formatting is enforced.
+
+4. Phase II: CI Completeness
+
+Objective:
+Make GitHub Actions prove the same claims the README makes.
+
+Work:
+
+- add cargo fmt --check to CI
+- add cargo clippy --workspace --all-targets -- -D warnings to CI
+- add Helm installation and helm template hermes ./deploy/helm/hermes to CI
+- add a CI job that runs hermes-node validate-config, plan, score-snapshot, and serve --once
+- ensure gateway CI uses the same package manager expected for live runtime
+- publish CI status clearly in README
+
+Success criterion:
+CI proves formatting, static checks, unit tests, CLI smoke commands, gateway checks, and Helm rendering.
+
+5. Phase III: Local Runtime Readiness
+
+Objective:
+Make Hermes runnable locally, not just testable locally.
+
+Work:
+
+- add a documented local setup path for Bun
+- provide a Node-compatible gateway start option or explicitly require Bun everywhere
+- add .env.example for gateway runtime settings
+- add a gateway readiness smoke command that starts the server and queries /healthz and /readyz
+- make missing external services report clear degraded readiness instead of vague startup failure
+- ensure the operator control CLI checks for Bun and Helm before offering actions that require them
+
+Success criterion:
+A developer can start the gateway locally, hit health endpoints, and understand any missing dependencies without reading source code.
+
+6. Phase IV: Integration Test Harness
+
+Objective:
+Move beyond unit tests and fixture-only confidence.
+
+Work:
+
+- create a docker-compose or equivalent local integration stack for Redis, PostgreSQL, and SurrealDB
+- run gateway context retrieval against the local vector backend
+- add integration tests for service timeout behavior, degraded services, and successful retrieval
+- add a smoke path for Cloudflare Vectorize using mocked HTTP responses and a documented live-test mode
+- store integration fixtures separately from unit fixtures
+- make integration tests optional locally but runnable in CI when dependencies are available
+
+Success criterion:
+Hermes proves it can communicate with realistic backing services, not just mocked functions.
+
+7. Phase V: Deployment Proof
+
+Objective:
+Prove that deployment assets are internally consistent and operator-usable.
+
+Work:
+
+- render Helm templates in CI
+- validate Kubernetes manifests with kubeconform or kubectl dry-run where possible
+- add values files for local, staging, and production profiles
+- ensure secrets are never embedded in values files
+- add documented upgrade and rollback procedures
+- add tests or linting for Prometheus rules and Grafana dashboard JSON
+- verify Dockerfiles build successfully in CI or a nightly workflow
+
+Success criterion:
+Hermes deployment assets are not merely present; they render, lint, and build.
+
+8. Phase VI: Secure Key and Identity Workflow
+
+Objective:
+Make hotkey and coldkey handling operationally credible.
+
+Work:
+
+- document exact hotkey injection paths for Vault and Kubernetes secrets
+- add configuration validation for required secret references
+- add dry-run checks that confirm secret references exist without printing secrets
+- define coldkey offline procedures as an operator checklist
+- add incident response workflow for key compromise
+- separate local demo credentials from production secret assumptions
+
+Success criterion:
+Operators can understand and verify key handling without exposing private material.
+
+9. Phase VII: Bittensor/Subtensor Boundary
+
+Objective:
+Connect Hermes to the actual network boundary it claims to support.
+
+Work:
+
+- define the exact Subtensor RPC interactions Hermes must perform
+- add a trait or adapter boundary for Subtensor clients
+- implement a dry-run Subtensor client for tests
+- add live-read commands for subnet metadata, validator registration state, and epoch data
+- add fixture capture commands for real network snapshots
+- compare fixture YC3 scoring against expected Bittensor behavior where possible
+- document what Hermes does and does not automate around validator registration and emissions
+
+Success criterion:
+Hermes has a real, testable boundary with Bittensor rather than only generic deployment planning.
+
+10. Phase VIII: Operator Control Plane Maturity
+
+Objective:
+Turn the local control CLI from convenience menu into a reliable operator surface.
+
+Work:
+
+- decide whether the numbered control CLI should become an official supported interface
+- add non-interactive equivalents for every menu action
+- validate dependencies before starting managed processes
+- avoid offering Helm or Bun actions when those tools are missing
+- record process logs and status in predictable locations
+- add smoke tests for start, status, and stop behavior using harmless test commands
+- document Windows, Linux, and server usage separately
+
+Success criterion:
+The operator interface is safe, scriptable, and honest about host readiness.
+
+11. Phase IX: Observability and SLOs
+
+Objective:
+Make Hermes measurable.
+
+Work:
+
+- define gateway latency, route success, retrieval timeout, and backend availability SLOs
+- expose Prometheus metrics from the gateway
+- expose Rust node planning and scoring metrics where appropriate
+- add dashboard panels for gateway health, vector retrieval latency, Subtensor RPC status, and validator workload health
+- add alerts for degraded dependencies, failed retrieval, stale epoch data, and missing validator heartbeats
+- include a local metrics smoke test
+
+Success criterion:
+Operators can see whether Hermes is healthy, degraded, or unsafe to operate.
+
+12. Phase X: Staging and Production Readiness
+
+Objective:
+Only after the previous phases, prove Hermes against a real staging environment.
+
+Work:
+
+- deploy to a staging cluster with non-production keys
+- connect to real or staging equivalents of Redis, PostgreSQL, SurrealDB or Vectorize
+- run gateway health and retrieval smoke tests
+- run Subtensor read-only commands
+- validate telemetry collection
+- exercise rollback and incident-response procedures
+- document observed gaps before production use
+
+Success criterion:
+Hermes can be operated in staging with repeatable deployment, health checks, logs, and rollback.
+
+13. Final Judgment
+
+Hermes should continue. It is not pointless, and it is not broken in the sense of failing its local unit and CLI contracts. But it is not yet production-proven.
+
+The correct path forward is:
+
+1. clean the repository
+2. make CI prove every README claim
+3. make local runtime startup easy and honest
+4. add real integration services
+5. prove deployment assets
+6. define the Bittensor/Subtensor boundary
+7. mature the operator control plane
+8. measure real operational health
+9. stage before production
+
+The project becomes truly useful when Hermes stops being only a convincing architecture and becomes an operationally verified control plane.
